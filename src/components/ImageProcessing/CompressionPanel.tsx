@@ -1,12 +1,9 @@
-import { useState } from 'react'
 import { Info } from 'lucide-react'
+import { useCompressionStore, type CompressionSettings } from '../../stores/compressionStore'
 
 export function CompressionPanel() {
-  const [quality, setQuality] = useState(85)
-  const [format, setFormat] = useState<'original' | 'jpeg' | 'png' | 'webp' | 'avif'>('original')
-  const [progressive, setProgressive] = useState(true)
-  const [lossless, setLossless] = useState(false)
-  const [stripMetadata, setStripMetadata] = useState(true)
+  const { compression, updateCompression } = useCompressionStore()
+  const { quality, format, progressive, lossless, stripMetadata } = compression
 
   return (
     <div className="p-4 space-y-6">
@@ -22,7 +19,7 @@ export function CompressionPanel() {
           ].map(f => (
             <button
               key={f.id}
-              onClick={() => setFormat(f.id as any)}
+              onClick={() => updateCompression({ format: f.id as CompressionSettings['format'] })}
               className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
                 format === f.id
                   ? 'bg-primary-500 text-white border-primary-500'
@@ -45,7 +42,7 @@ export function CompressionPanel() {
           min="1"
           max="100"
           value={quality}
-          onChange={(e) => setQuality(Number(e.target.value))}
+          onChange={(e) => updateCompression({ quality: Number(e.target.value) })}
           className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary-500"
         />
         <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -60,7 +57,7 @@ export function CompressionPanel() {
             <input
               type="checkbox"
               checked={progressive}
-              onChange={(e) => setProgressive(e.target.checked)}
+              onChange={(e) => updateCompression({ progressive: e.target.checked })}
               className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-primary-500 focus:ring-primary-500"
             />
             <div>
@@ -79,7 +76,7 @@ export function CompressionPanel() {
             <input
               type="checkbox"
               checked={lossless}
-              onChange={(e) => setLossless(e.target.checked)}
+              onChange={(e) => updateCompression({ lossless: e.target.checked })}
               className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-primary-500 focus:ring-primary-500"
             />
             <div>
@@ -97,7 +94,7 @@ export function CompressionPanel() {
           <input
             type="checkbox"
             checked={stripMetadata}
-            onChange={(e) => setStripMetadata(e.target.checked)}
+            onChange={(e) => updateCompression({ stripMetadata: e.target.checked })}
             className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-primary-500 focus:ring-primary-500"
           />
           <div>

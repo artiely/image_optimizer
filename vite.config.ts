@@ -15,10 +15,7 @@ export default defineConfig({
         },
         vite: {
           build: {
-            outDir: 'dist-electron',
-            rollupOptions: {
-              external: ['sharp']
-            }
+            outDir: 'dist-electron'
           }
         }
       },
@@ -39,11 +36,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src')
-    }
-  },
-  build: {
-    rollupOptions: {
-      external: ['sharp']
     }
   }
 })

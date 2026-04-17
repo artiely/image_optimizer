@@ -28,7 +28,7 @@ export interface ImageFile {
 export interface ProcessSettings {
   compression: {
     quality: number
-    format: 'jpeg' | 'png' | 'webp' | 'avif'
+    format: 'original' | 'jpeg' | 'png' | 'webp' | 'avif'
     progressive: boolean
     lossless: boolean
     stripMetadata: boolean

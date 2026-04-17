@@ -364,5 +364,5 @@ A:
 
 <div align="center">
   <p>如果这个项目对您有帮助，请给一个 ⭐️ Star！</p>
-  <p>Made with ❤️ by Your Name</p>
+  <p>Made with ❤️ by Artiely</p>
 </div>

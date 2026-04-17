@@ -8,9 +8,14 @@
     "dist/**/*",
     "dist-electron/**/*"
   ],
+  "asar": true,
+  "asarUnpack": [
+    "node_modules/sharp/**/*",
+    "node_modules/@img/**/*"
+  ],
   "mac": {
     "category": "public.app-category.graphics-design",
-    "target": ["dmg", "zip"]
+    "target": ["zip"]
   },
   "win": {
     "target": ["nsis", "portable"]

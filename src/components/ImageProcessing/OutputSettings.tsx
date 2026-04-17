@@ -1,25 +1,14 @@
-import { useState, useEffect } from 'react'
 import { FolderOpen } from 'lucide-react'
-import { useSettingsStore } from '../../stores/settingsStore'
+import { useCompressionStore, type OutputSettings as OutputSettingsType } from '../../stores/compressionStore'
 
 export function OutputSettings() {
-  const { lastOutputDirectory, updateSettings } = useSettingsStore()
-  const [outputDir, setOutputDir] = useState(lastOutputDirectory || '')
-  const [namingRule, setNamingRule] = useState<'original' | 'suffix' | 'prefix' | 'sequence'>('suffix')
-  const [suffix, setSuffix] = useState('_optimized')
-  const [prefix, setPrefix] = useState('optimized_')
-  const [outputFormat, setOutputFormat] = useState<'original' | 'jpeg' | 'png' | 'webp' | 'avif'>('original')
-
-  useEffect(() => {
-    if (outputDir) {
-      updateSettings({ lastOutputDirectory: outputDir })
-    }
-  }, [outputDir, updateSettings])
+  const { output, updateOutput } = useCompressionStore()
+  const { directory: outputDir, namingRule, suffix, prefix, format: outputFormat } = output
 
   const handleSelectDirectory = async () => {
     const dir = await window.electronAPI.selectFolder()
     if (dir) {
-      setOutputDir(dir)
+      updateOutput({ directory: dir })
     }
   }
 
@@ -31,7 +20,7 @@ export function OutputSettings() {
           <input
             type="text"
             value={outputDir}
-            onChange={(e) => setOutputDir(e.target.value)}
+            onChange={(e) => updateOutput({ directory: e.target.value })}
             placeholder="选择输出目录..."
             className="flex-1 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
           />
@@ -71,7 +60,7 @@ export function OutputSettings() {
                 name="namingRule"
                 value={rule.id}
                 checked={namingRule === rule.id}
-                onChange={(e) => setNamingRule(e.target.value as any)}
+                onChange={(e) => updateOutput({ namingRule: e.target.value as OutputSettingsType['namingRule'] })}
                 className="mt-0.5"
               />
               <div>
@@ -89,7 +78,7 @@ export function OutputSettings() {
           <input
             type="text"
             value={suffix}
-            onChange={(e) => setSuffix(e.target.value)}
+            onChange={(e) => updateOutput({ suffix: e.target.value })}
             placeholder="_optimized"
             className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
@@ -102,7 +91,7 @@ export function OutputSettings() {
           <input
             type="text"
             value={prefix}
-            onChange={(e) => setPrefix(e.target.value)}
+            onChange={(e) => updateOutput({ prefix: e.target.value })}
             placeholder="optimized_"
             className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
@@ -113,7 +102,7 @@ export function OutputSettings() {
         <label className="block text-sm font-medium mb-2">输出格式</label>
         <select
           value={outputFormat}
-          onChange={(e) => setOutputFormat(e.target.value as any)}
+          onChange={(e) => updateOutput({ format: e.target.value as OutputSettingsType['format'] })}
           className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
         >
           <option value="original">保持原格式</option>

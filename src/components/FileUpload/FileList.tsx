@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { useImageStore } from '../../stores/imageStore'
 import { useImageProcessor } from '../../hooks/useImageProcessor'
+import { useCompressionStore } from '../../stores/compressionStore'
 import { formatBytes, formatDimensions, formatCompressionRatio } from '../../utils/formatBytes'
 import { Trash2, CheckCircle, XCircle, Loader, Eye, Zap } from 'lucide-react'
 
 export function FileList() {
   const { files, selectedFiles, toggleFileSelection, selectAll, deselectAll, removeFiles } = useImageStore()
   const { processImages } = useImageProcessor()
+  const { compression, output } = useCompressionStore()
   const [isProcessing, setIsProcessing] = useState(false)
 
   const allSelected = files.length > 0 && selectedFiles.length === files.length
@@ -33,20 +35,8 @@ export function FileList() {
     setIsProcessing(true)
     
     const settings = {
-      compression: {
-        quality: 85,
-        format: 'jpeg' as const,
-        progressive: true,
-        lossless: false,
-        stripMetadata: true
-      },
-      output: {
-        directory: '',
-        namingRule: 'suffix' as const,
-        suffix: '_optimized',
-        prefix: 'optimized_',
-        format: 'original' as const
-      }
+      compression,
+      output
     }
 
     try {

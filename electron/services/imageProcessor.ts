@@ -1,6 +1,20 @@
-import sharp from 'sharp'
 import path from 'path'
 import fs from 'fs/promises'
+
+let _sharp: any = null
+function getSharp() {
+  if (!_sharp) {
+    if (process.platform === 'darwin' && process.type === 'browser') {
+      const frameworksDir = path.join(path.dirname(process.execPath), '..', 'Frameworks')
+      const existing = process.env.DYLD_FALLBACK_LIBRARY_PATH || ''
+      if (!existing.includes(frameworksDir)) {
+        process.env.DYLD_FALLBACK_LIBRARY_PATH = existing ? `${frameworksDir}:${existing}` : frameworksDir
+      }
+    }
+    _sharp = require('sharp')
+  }
+  return _sharp
+}
 
 export interface ImageMetadata {
   width: number
@@ -50,7 +64,7 @@ export interface ProcessResult {
 export class ImageProcessor {
   async getMetadata(filePath: string): Promise<ImageMetadata> {
     const stats = await fs.stat(filePath)
-    const metadata = await sharp(filePath).metadata()
+    const metadata = await getSharp()(filePath).metadata()
     
     return {
       width: metadata.width || 0,
@@ -66,7 +80,7 @@ export class ImageProcessor {
   }
 
   async generateThumbnail(filePath: string): Promise<string> {
-    const thumbnail = await sharp(filePath)
+    const thumbnail = await getSharp()(filePath)
       .resize(200, 200, { fit: 'inside' })
       .jpeg({ quality: 80 })
       .toBuffer()
@@ -80,6 +94,7 @@ export class ImageProcessor {
     onProgress?: (progress: number) => void
   ): Promise<ProcessResult> {
     const inputStats = await fs.stat(filePath)
+    const sharp = getSharp()
     const inputMetadata = await sharp(filePath).metadata()
     
     let image = sharp(filePath)
@@ -95,38 +110,60 @@ export class ImageProcessor {
     const outputFormat = settings.output.format === 'original' 
       ? inputMetadata.format 
       : settings.output.format || inputMetadata.format
+
+    const quality = settings.compression.quality || 85
     
     switch (outputFormat) {
       case 'jpeg':
         image = image.jpeg({
-          quality: settings.compression.quality || 85,
+          quality,
           progressive: settings.compression.progressive,
           mozjpeg: true
         })
         break
-      case 'png':
-        const pngCompressionLevel = Math.min(9, Math.max(6, Math.floor((100 - (settings.compression.quality || 85)) / 10)))
-        image = image.png({
-          compressionLevel: pngCompressionLevel,
-          progressive: settings.compression.progressive,
-          adaptiveFiltering: true
-        })
+      case 'png': {
+        const hasAlpha = inputMetadata.hasAlpha || inputMetadata.channels === 4
+        const isPaletteCandidate = !hasAlpha || (inputMetadata.channels || 3) <= 4
+        const usePalette = isPaletteCandidate && quality < 100
+
+        if (usePalette) {
+          const colours = Math.max(2, Math.min(256, Math.round(quality * 2.56)))
+          image = image.png({
+            palette: true,
+            quality,
+            colours,
+            effort: 10,
+            compressionLevel: 9
+          })
+        } else {
+          image = image.png({
+            compressionLevel: 9,
+            effort: 10,
+            progressive: settings.compression.progressive,
+            adaptiveFiltering: true
+          })
+        }
         break
+      }
       case 'webp':
         image = image.webp({
-          quality: settings.compression.quality || 85,
-          lossless: settings.compression.lossless
+          quality,
+          lossless: settings.compression.lossless,
+          effort: 6
         })
         break
       case 'avif':
         image = image.avif({
-          quality: settings.compression.quality || 85,
-          lossless: settings.compression.lossless
+          quality,
+          lossless: settings.compression.lossless,
+          effort: 6
         })
         break
     }
     
-    if (!settings.compression.stripMetadata) {
+    if (settings.compression.stripMetadata) {
+      // don't call withMetadata() — this effectively strips metadata
+    } else {
       image = image.withMetadata()
     }
     
