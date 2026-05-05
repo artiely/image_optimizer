@@ -48,7 +48,7 @@ export interface ProcessSettings {
     namingRule: 'original' | 'suffix' | 'prefix' | 'sequence'
     suffix?: string
     prefix?: string
-    format?: 'original' | 'jpeg' | 'png' | 'webp' | 'avif'
+    formats?: ('original' | 'jpeg' | 'png' | 'webp' | 'avif')[]
   }
 }
 
@@ -107,9 +107,10 @@ export class ImageProcessor {
       })
     }
     
-    const outputFormat = settings.output.format === 'original' 
-      ? inputMetadata.format 
-      : settings.output.format || inputMetadata.format
+    const requestedFormat = settings.output.formats?.[0] || 'original'
+    const outputFormat = requestedFormat === 'original'
+      ? inputMetadata.format
+      : requestedFormat || inputMetadata.format
 
     const quality = settings.compression.quality || 85
     
@@ -241,5 +242,57 @@ export class ImageProcessor {
       },
       compressionRatio: ((inputStats.size - outputStats.size) / inputStats.size) * 100
     }
+  }
+
+  async processImageMultiFormat(
+    filePath: string,
+    settings: ProcessSettings,
+    onProgress?: (progress: number) => void
+  ): Promise<ProcessResult[]> {
+    const formats = settings.output.formats || ['original']
+    const results: ProcessResult[] = []
+
+    for (let i = 0; i < formats.length; i++) {
+      const format = formats[i]
+      const formatSettings: ProcessSettings = {
+        ...settings,
+        output: { ...settings.output, formats: [format] }
+      }
+
+      const formatProgress = (p: number) => {
+        const base = (i / formats.length) * 100
+        const range = 100 / formats.length
+        onProgress?.(base + (p / 100) * range)
+      }
+
+      const result = await this.processImage(filePath, formatSettings, formatProgress)
+      results.push(result)
+    }
+
+    return results
+  }
+
+  async getFilesInDirectory(dirPath: string): Promise<string[]> {
+    const imageExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'tiff', 'avif']
+    const files: string[] = []
+
+    const scan = async (currentPath: string) => {
+      const entries = await fs.readdir(currentPath, { withFileTypes: true })
+      for (const entry of entries) {
+        if (entry.name.startsWith('.')) continue
+        const fullPath = path.join(currentPath, entry.name)
+        if (entry.isDirectory()) {
+          await scan(fullPath)
+        } else if (entry.isFile()) {
+          const ext = path.extname(entry.name).toLowerCase().slice(1)
+          if (imageExtensions.includes(ext)) {
+            files.push(fullPath)
+          }
+        }
+      }
+    }
+
+    await scan(dirPath)
+    return files
   }
 }

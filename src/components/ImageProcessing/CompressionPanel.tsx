@@ -1,33 +1,33 @@
 import { Info } from 'lucide-react'
-import { useCompressionStore, type CompressionSettings } from '../../stores/compressionStore'
+import { useCompressionStore } from '../../stores/compressionStore'
 
 export function CompressionPanel() {
-  const { compression, updateCompression } = useCompressionStore()
-  const { quality, format, progressive, lossless, stripMetadata } = compression
+  const { compression, output, updateCompression } = useCompressionStore()
+  const { quality, progressive, lossless, stripMetadata } = compression
+  const formats = output.formats
+
+  // Determine which UI options to show based on selected output formats
+  const hasOriginal = formats.includes('original')
+  const hasJpeg = formats.includes('jpeg')
+  const hasPng = formats.includes('png')
+  const hasWebp = formats.includes('webp')
+  const hasAvif = formats.includes('avif')
+  const showProgressive = hasOriginal || hasJpeg || hasPng
+  const showLossless = hasWebp || hasAvif
 
   return (
     <div className="p-4 space-y-6">
       <div>
         <label className="block text-sm font-medium mb-3">输出格式</label>
-        <div className="grid grid-cols-2 gap-2">
-          {[
-            { id: 'original', label: '原格式' },
-            { id: 'jpeg', label: 'JPEG' },
-            { id: 'png', label: 'PNG' },
-            { id: 'webp', label: 'WebP' },
-            { id: 'avif', label: 'AVIF' }
-          ].map(f => (
-            <button
-              key={f.id}
-              onClick={() => updateCompression({ format: f.id as CompressionSettings['format'] })}
-              className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
-                format === f.id
-                  ? 'bg-primary-500 text-white border-primary-500'
-                  : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:border-primary-400'
-              }`}
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">在右侧"输出设置"中可多选格式</p>
+        <div className="flex flex-wrap gap-2">
+          {formats.map(f => (
+            <span
+              key={f}
+              className="px-3 py-1.5 text-sm rounded-lg bg-primary-500 text-white border border-primary-500"
             >
-              {f.label}
-            </button>
+              {f === 'original' ? '原格式' : f.toUpperCase()}
+            </span>
           ))}
         </div>
       </div>
@@ -51,7 +51,7 @@ export function CompressionPanel() {
         </div>
       </div>
 
-      {(format === 'jpeg' || format === 'png' || format === 'original') && (
+      {showProgressive && (
         <div>
           <label className="flex items-center gap-3 cursor-pointer">
             <input
@@ -70,7 +70,7 @@ export function CompressionPanel() {
         </div>
       )}
 
-      {(format === 'webp' || format === 'avif') && (
+      {showLossless && (
         <div>
           <label className="flex items-center gap-3 cursor-pointer">
             <input

@@ -3,10 +3,10 @@ import { useImageStore } from '../../stores/imageStore'
 import { useImageProcessor } from '../../hooks/useImageProcessor'
 import { useCompressionStore } from '../../stores/compressionStore'
 import { formatBytes, formatDimensions, formatCompressionRatio } from '../../utils/formatBytes'
-import { Trash2, CheckCircle, XCircle, Loader, Eye, Zap } from 'lucide-react'
+import { Trash2, CheckCircle, XCircle, Loader, Eye, Zap, RotateCw } from 'lucide-react'
 
 export function FileList() {
-  const { files, selectedFiles, toggleFileSelection, selectAll, deselectAll, removeFiles } = useImageStore()
+  const { files, selectedFiles, toggleFileSelection, selectAll, deselectAll, removeFiles, updateFile } = useImageStore()
   const { processImages } = useImageProcessor()
   const { compression, output } = useCompressionStore()
   const [isProcessing, setIsProcessing] = useState(false)
@@ -33,7 +33,7 @@ export function FileList() {
     if (pendingFiles.length === 0) return
 
     setIsProcessing(true)
-    
+
     const settings = {
       compression,
       output
@@ -43,6 +43,17 @@ export function FileList() {
       await processImages(settings)
     } finally {
       setIsProcessing(false)
+    }
+  }
+
+  const handleReconvert = () => {
+    const completedIds = files
+      .filter(f => f.status === 'completed' || f.status === 'error')
+      .map(f => f.id)
+    if (completedIds.length === 0) return
+
+    for (const id of completedIds) {
+      updateFile(id, { status: 'pending', progress: 0, output: undefined, outputs: undefined, error: undefined })
     }
   }
 
@@ -83,6 +94,16 @@ export function FileList() {
               </button>
             )}
             
+            {(completedCount > 0 || errorCount > 0) && !isProcessing && (
+              <button
+                onClick={handleReconvert}
+                className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2"
+              >
+                <RotateCw className="w-4 h-4" />
+                重新转换
+              </button>
+            )}
+
             {pendingCount > 0 && (
               <button
                 onClick={handleStartProcess}
@@ -152,15 +173,23 @@ export function FileList() {
                     </div>
                   )}
                   
-                  {file.status === 'completed' && file.output && (
+                  {file.status === 'completed' && file.outputs && file.outputs.length > 0 && (
                     <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <div className="text-sm font-medium text-primary-500">
-                          {formatCompressionRatio(file.output.compressionRatio)}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {formatBytes(file.output.outputSize)}
-                        </div>
+                      <div className="text-right space-y-0.5">
+                        {file.outputs.map((out, idx) => {
+                          const ext = out.output.split('.').pop()?.toUpperCase() || ''
+                          return (
+                            <div key={idx} className="flex items-center gap-2 justify-end">
+                              <span className="text-xs text-gray-400 font-mono">{ext}</span>
+                              <span className="text-xs text-primary-500">
+                                {formatCompressionRatio(out.compressionRatio)}
+                              </span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                {formatBytes(out.outputSize)}
+                              </span>
+                            </div>
+                          )
+                        })}
                       </div>
                       <CheckCircle className="w-5 h-5 text-primary-500" />
                     </div>

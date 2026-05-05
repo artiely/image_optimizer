@@ -6,6 +6,7 @@ export interface ElectronAPI {
   getImageMetadata: (filePath: string) => Promise<ImageMetadata>
   generateThumbnail: (filePath: string) => Promise<string>
   processImages: (files: string[], settings: any) => Promise<ProcessResult[]>
+  getFilesInDirectory: (dirPath: string) => Promise<string[]>
   getSystemTheme: () => Promise<string>
   
   onProcessProgress: (callback: (data: {
@@ -17,7 +18,7 @@ export interface ElectronAPI {
   
   onProcessComplete: (callback: (data: {
     fileId: string
-    output: ProcessResult
+    outputs: ProcessResult[]
   }) => void) => void
   
   onSystemThemeChanged: (callback: (theme: string) => void) => void

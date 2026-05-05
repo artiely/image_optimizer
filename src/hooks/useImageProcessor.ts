@@ -32,7 +32,8 @@ export function useImageProcessor() {
       updateFile(data.fileId, {
         status: 'completed',
         progress: 100,
-        output: data.output
+        outputs: data.outputs,
+        output: data.outputs?.[0]
       })
     })
 

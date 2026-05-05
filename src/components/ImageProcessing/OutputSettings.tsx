@@ -1,9 +1,31 @@
 import { FolderOpen } from 'lucide-react'
-import { useCompressionStore, type OutputSettings as OutputSettingsType } from '../../stores/compressionStore'
+import { useCompressionStore, type OutputSettings as OutputSettingsType, type OutputFormat } from '../../stores/compressionStore'
+
+const FORMAT_OPTIONS: { id: OutputFormat; label: string }[] = [
+  { id: 'original', label: '原格式' },
+  { id: 'jpeg', label: 'JPEG' },
+  { id: 'png', label: 'PNG' },
+  { id: 'webp', label: 'WebP' },
+  { id: 'avif', label: 'AVIF' }
+]
 
 export function OutputSettings() {
   const { output, updateOutput } = useCompressionStore()
-  const { directory: outputDir, namingRule, suffix, prefix, format: outputFormat } = output
+  const { directory: outputDir, namingRule, suffix, prefix, formats: outputFormats } = output
+
+  const toggleFormat = (format: OutputFormat) => {
+    if (format === 'original') {
+      updateOutput({ formats: ['original'] })
+      return
+    }
+    const withoutOriginal = outputFormats.filter(f => f !== 'original')
+    if (withoutOriginal.includes(format)) {
+      const next = withoutOriginal.filter(f => f !== format)
+      updateOutput({ formats: next.length > 0 ? next : ['original'] })
+    } else {
+      updateOutput({ formats: [...withoutOriginal, format] })
+    }
+  }
 
   const handleSelectDirectory = async () => {
     const dir = await window.electronAPI.selectFolder()
@@ -99,18 +121,35 @@ export function OutputSettings() {
       )}
 
       <div>
-        <label className="block text-sm font-medium mb-2">输出格式</label>
-        <select
-          value={outputFormat}
-          onChange={(e) => updateOutput({ format: e.target.value as OutputSettingsType['format'] })}
-          className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-        >
-          <option value="original">保持原格式</option>
-          <option value="jpeg">JPEG</option>
-          <option value="png">PNG</option>
-          <option value="webp">WebP</option>
-          <option value="avif">AVIF</option>
-        </select>
+        <label className="block text-sm font-medium mb-3">输出格式 <span className="text-xs text-gray-400 font-normal">可多选</span></label>
+        <div className="grid grid-cols-3 gap-2">
+          {FORMAT_OPTIONS.map(f => {
+            const isSelected = outputFormats.includes(f.id)
+            return (
+              <label
+                key={f.id}
+                className={`flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-lg border cursor-pointer transition-colors ${
+                  isSelected
+                    ? 'bg-primary-500 text-white border-primary-500'
+                    : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:border-primary-400'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={() => toggleFormat(f.id)}
+                  className="sr-only"
+                />
+                {f.label}
+              </label>
+            )
+          })}
+        </div>
+        {outputFormats.length > 1 && (
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+            将同时输出 {outputFormats.filter(f => f !== 'original').map(f => f.toUpperCase()).join(', ')} 格式
+          </p>
+        )}
       </div>
     </div>
   )

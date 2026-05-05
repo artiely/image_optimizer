@@ -23,6 +23,7 @@ export interface ImageFile {
   progress: number
   error?: string
   output?: ProcessResult
+  outputs?: ProcessResult[]
 }
 
 export interface ProcessSettings {
@@ -45,7 +46,7 @@ export interface ProcessSettings {
     namingRule: 'original' | 'suffix' | 'prefix' | 'sequence'
     suffix: string
     prefix: string
-    format: 'original' | 'jpeg' | 'png' | 'webp' | 'avif'
+    formats: ('original' | 'jpeg' | 'png' | 'webp' | 'avif')[]
   }
 }
 

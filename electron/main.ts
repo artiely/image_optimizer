@@ -83,20 +83,34 @@ ipcMain.handle('process-images', async (_, files: string[], settings: any) => {
         status: 'processing'
       })
 
-      const result = await imageProcessor.processImage(file, settings, (progress) => {
-        mainWindow?.webContents.send('process-progress', {
-          fileId: file,
-          progress,
-          status: 'processing'
+      const formats = settings.output?.formats || ['original']
+      if (formats.length > 1) {
+        const multiResults = await imageProcessor.processImageMultiFormat(file, settings, (progress) => {
+          mainWindow?.webContents.send('process-progress', {
+            fileId: file,
+            progress,
+            status: 'processing'
+          })
         })
-      })
-
-      results.push(result)
-      
-      mainWindow?.webContents.send('process-complete', {
-        fileId: file,
-        output: result
-      })
+        results.push(...multiResults)
+        mainWindow?.webContents.send('process-complete', {
+          fileId: file,
+          outputs: multiResults
+        })
+      } else {
+        const result = await imageProcessor.processImage(file, settings, (progress) => {
+          mainWindow?.webContents.send('process-progress', {
+            fileId: file,
+            progress,
+            status: 'processing'
+          })
+        })
+        results.push(result)
+        mainWindow?.webContents.send('process-complete', {
+          fileId: file,
+          outputs: [result]
+        })
+      }
     } catch (error) {
       mainWindow?.webContents.send('process-progress', {
         fileId: file,
@@ -107,6 +121,10 @@ ipcMain.handle('process-images', async (_, files: string[], settings: any) => {
     }
   }
   return results
+})
+
+ipcMain.handle('get-files-in-directory', async (_, dirPath: string) => {
+  return await imageProcessor.getFilesInDirectory(dirPath)
 })
 
 ipcMain.handle('get-system-theme', () => {

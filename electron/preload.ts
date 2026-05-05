@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getImageMetadata: (filePath: string) => ipcRenderer.invoke('get-image-metadata', filePath),
   generateThumbnail: (filePath: string) => ipcRenderer.invoke('generate-thumbnail', filePath),
   processImages: (files: string[], settings: any) => ipcRenderer.invoke('process-images', files, settings),
+  getFilesInDirectory: (dirPath: string) => ipcRenderer.invoke('get-files-in-directory', dirPath),
   getSystemTheme: () => ipcRenderer.invoke('get-system-theme'),
   
   onProcessProgress: (callback: (data: any) => void) => {

@@ -9,12 +9,14 @@ export interface CompressionSettings {
   stripMetadata: boolean
 }
 
+export type OutputFormat = 'original' | 'jpeg' | 'png' | 'webp' | 'avif'
+
 export interface OutputSettings {
   directory: string
   namingRule: 'original' | 'suffix' | 'prefix' | 'sequence'
   suffix: string
   prefix: string
-  format: 'original' | 'jpeg' | 'png' | 'webp' | 'avif'
+  formats: OutputFormat[]
 }
 
 interface CompressionStore {
@@ -40,7 +42,7 @@ const defaultOutput: OutputSettings = {
   namingRule: 'suffix',
   suffix: '_optimized',
   prefix: 'optimized_',
-  format: 'original'
+  formats: ['original']
 }
 
 export const useCompressionStore = create<CompressionStore>()(
@@ -61,7 +63,28 @@ export const useCompressionStore = create<CompressionStore>()(
       resetOutput: () => set({ output: defaultOutput })
     }),
     {
-      name: 'compression-settings'
+      name: 'compression-settings',
+      merge: (persisted, current) => {
+        const persistedState = persisted as any
+        const merged = { ...current, ...persistedState }
+
+        // Migrate old output.format -> output.formats
+        if (persistedState?.output && 'format' in persistedState.output && !('formats' in persistedState.output)) {
+          merged.output = {
+            ...defaultOutput,
+            ...persistedState.output,
+            formats: [persistedState.output.format]
+          }
+          delete merged.output.format
+        }
+
+        // Ensure output.formats is always a valid array
+        if (!Array.isArray(merged.output?.formats) || merged.output.formats.length === 0) {
+          merged.output = { ...merged.output, formats: defaultOutput.formats }
+        }
+
+        return merged
+      }
     }
   )
 )
